@@ -8,6 +8,7 @@ import json
 import math
 from pathlib import Path
 import sqlite3
+from typing import Callable
 
 TYPES = {"string", "integer", "number", "boolean"}
 
@@ -128,6 +129,10 @@ class Report:
     passed: bool
 
 
+class ScanCancelled(Exception):
+    """A scan stopped cooperatively; no complete report is available."""
+
+
 def scan(
     path: Path,
     contract: dict,
@@ -136,7 +141,13 @@ def scan(
     max_line_bytes: int = 1_000_000,
     max_samples: int = 50,
     error_budget: float = 0,
+    should_cancel: Callable[[], bool] | None = None,
 ) -> Report:
+    """Scan bounded lines, checking cancellation between reads and before return.
+
+    Cancellation cannot interrupt an operating-system read already in progress.
+    A cancelled scan raises ScanCancelled instead of returning a partial report.
+    """
     validate_contract(contract)
     if (
         not 0 <= error_budget <= 1
@@ -150,6 +161,8 @@ def scan(
     truncated = False
     with path.open("rb") as stream:
         while True:
+            if should_cancel is not None and should_cancel():
+                raise ScanCancelled()
             line = stream.readline(max_line_bytes + 1)
             if not line:
                 break
@@ -175,6 +188,8 @@ def scan(
                         samples.append({"line": records, "field": field, "code": code})
             if truncated:
                 break
+    if should_cancel is not None and should_cancel():
+        raise ScanCancelled()
     digest = hashlib.sha256(json.dumps(contract, sort_keys=True).encode()).hexdigest()
     passed = records > 0 and not truncated and invalid / records <= error_budget
     return Report(records, invalid, violations, samples, truncated, digest, passed)
