@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "allow_extra": false,
+  "fields": {
+    "event_id": {
+      "type": "string",
+      "required": true
+    },
+    "latency_ms": {
+      "type": "number",
+      "required": true,
+      "min": 0,
+      "max": 5000
+    },
+    "success": {
+      "type": "boolean",
+      "required": true
+    }
+  }
+}
