@@ -14,7 +14,7 @@ customer records to a hosted service. Zero runtime third-party Python dependenci
   tighter ranges, revoked nullability and newly constrained optional fields.
 - Rejects duplicate JSON keys, non-finite numbers, malformed lines and incomplete scans.
 - Stores only timestamps, contract hashes and aggregate counts in transactional SQLite history.
-- Offers a Tk desktop inspector with a background validation worker and JSON report export.
+- Offers a Tk desktop inspector with a cancellable background worker and JSON report export.
 - Exits 0 for pass, 1 for quality failure, 2 for invalid input/configuration.
 
 ```mermaid
@@ -46,6 +46,8 @@ python -m unittest discover -s tests -v
 
 The bad fixture intentionally exits 1. In the GUI choose the example contract, then an example
 dataset and click Validate. Export contains line numbers and rule codes, never raw records.
+Click Cancel to stop a running scan; closing the window also signals cancellation. A cancelled
+scan produces no report. Starting another scan clears the previous report to prevent stale exports.
 Contracts and reports can contain business-sensitive field names; store them privately as needed.
 
 ## Contract format
@@ -64,6 +66,9 @@ all limits; CLI exposes `--max-records` and `--error-budget` (fraction 0..1). Em
 oversized lines and record-limit truncation always fail. Invalid records within the explicitly
 configured fraction may pass. Record count, invalid-record count and violation count differ.
 No raw input values or unknown key names appear in reports or stored history.
+The core API accepts `should_cancel`, a zero-argument callable returning a boolean. Cancellation
+raises `ScanCancelled` between bounded line reads and before returning a report. It does not
+interrupt an operating-system read already in progress, including reads on slow/network filesystems.
 
 ## Engineering decisions and limitations
 
@@ -73,10 +78,10 @@ event loop responsive. CLI checks can run in any existing CI without credentials
 
 Flat objects only: no arrays, nested object contracts, regexes, semantic date validation, distributed
 jobs, authentication, model integration, or automatic schema inference. A very large individual
-contract is rejected at 1 MB. The GUI checks up to the default record cap and does not have a
-mid-scan cancel control. Local files can change during scanning; inputs should be immutable snapshots.
+contract is rejected at 1 MB. The GUI checks up to the default record cap.
+Local files can change during scanning; inputs should be immutable snapshots.
 No benchmark, coverage percentage, adoption or uniqueness claim is made.
 
 No license grant has been selected by the owner. See `CONTRIBUTING.md` and `SECURITY.md`.
-Roadmap: nested-path contracts, immutable input fingerprints, cancellable jobs and additional
+Roadmap: nested-path contracts, immutable input fingerprints and additional
 compatibility/property tests before expanding the dialect.

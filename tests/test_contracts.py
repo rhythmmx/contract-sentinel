@@ -7,8 +7,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+from threading import Event
 
 from contract_sentinel.core import (
+    ScanCancelled,
     check_record,
     compatibility,
     load_json,
@@ -72,6 +75,38 @@ class Contracts(unittest.TestCase):
     def test_exact_limit_is_complete(self):
         self.path.write_text('{"count":1}\n' * 2)
         self.assertTrue(scan(self.path, self.contract, max_records=2).passed)
+
+    def test_precancelled_scan_reads_no_data(self):
+        self.path.write_text('{"count":1}\n')
+        with patch("contract_sentinel.core.load_json") as parse:
+            with self.assertRaises(ScanCancelled):
+                scan(self.path, self.contract, should_cancel=lambda: True)
+        parse.assert_not_called()
+
+    def test_cancellation_stops_before_next_record_and_closes_file(self):
+        self.path.write_text('{"count":1}\n' * 3)
+        cancelled = Event()
+
+        def check_and_cancel(record, contract):
+            cancelled.set()
+            return []
+
+        stream = self.path.open("rb")
+        with patch.object(Path, "open", return_value=stream):
+            with patch(
+                "contract_sentinel.core.check_record", side_effect=check_and_cancel
+            ) as check:
+                with self.assertRaises(ScanCancelled):
+                    scan(self.path, self.contract, should_cancel=cancelled.is_set)
+        self.assertEqual(check.call_count, 1)
+        self.assertTrue(stream.closed)
+
+    def test_uncancelled_callback_preserves_complete_report(self):
+        self.path.write_text('{"count":1}\n')
+        self.assertEqual(
+            scan(self.path, self.contract),
+            scan(self.path, self.contract, should_cancel=lambda: False),
+        )
 
     def test_oversized_line(self):
         self.path.write_bytes(b"x" * 100)
