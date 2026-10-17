@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import sqlite3
 from typing import Callable
@@ -77,9 +78,12 @@ def validate_contract(contract: dict) -> dict:
 
 
 def contract_from(path: Path) -> dict:
-    if path.stat().st_size > 1_000_000:
+    # Bound the actual read: metadata checked before opening could become stale.
+    with path.open("rb") as stream:
+        content = stream.read(1_000_001)
+    if len(content) > 1_000_000:
         raise ValueError("Contract exceeds 1 MB")
-    return validate_contract(load_json(path.read_text(encoding="utf-8")))
+    return validate_contract(load_json(content.decode("utf-8")))
 
 
 def check_record(record, contract: dict) -> list[tuple[str, str]]:
@@ -127,6 +131,10 @@ class Report:
     truncated: bool
     contract_sha256: str
     passed: bool
+    input_sha256: str = ""
+    input_bytes: int = 0
+    input_complete: bool = False
+    input_changed: bool = False
 
 
 class ScanCancelled(Exception):
@@ -147,6 +155,9 @@ def scan(
 
     Cancellation cannot interrupt an operating-system read already in progress.
     A cancelled scan raises ScanCancelled instead of returning a partial report.
+    Input hashes cover bytes returned by bounded reads, including record-limit
+    lookahead. Only input_complete identifies a complete, unchanged input hash.
+    Metadata checks detect common modifications, not an immutable snapshot.
     """
     validate_contract(contract)
     if (
@@ -159,13 +170,31 @@ def scan(
     records = invalid = violations = 0
     samples: list[dict] = []
     truncated = False
+    input_digest = hashlib.sha256()
+    input_bytes = 0
+    reached_eof = False
+
+    def identity(stat):
+        return (
+            stat.st_dev,
+            stat.st_ino,
+            stat.st_size,
+            stat.st_mtime_ns,
+            stat.st_ctime_ns,
+        )
+
+    before = identity(path.stat())
     with path.open("rb") as stream:
+        opened = identity(os.fstat(stream.fileno()))
         while True:
             if should_cancel is not None and should_cancel():
                 raise ScanCancelled()
             line = stream.readline(max_line_bytes + 1)
             if not line:
+                reached_eof = True
                 break
+            input_digest.update(line)
+            input_bytes += len(line)
             if records >= max_records:
                 truncated = True
                 break
@@ -188,11 +217,38 @@ def scan(
                         samples.append({"line": records, "field": field, "code": code})
             if truncated:
                 break
+        finished = identity(os.fstat(stream.fileno()))
+        try:
+            after = identity(path.stat())
+        except OSError:
+            # A disappeared or inaccessible source cannot certify a stable input.
+            after = None
+    # On Windows/Python 3.12 path stat and descriptor stat expose different
+    # ctime semantics. Compare ctime within each API, never across the APIs.
+    input_changed = (
+        after is None
+        or not (before[:4] == opened[:4] == finished[:4] == after[:4])
+        or before[4] != after[4]
+        or opened[4] != finished[4]
+    )
     if should_cancel is not None and should_cancel():
         raise ScanCancelled()
     digest = hashlib.sha256(json.dumps(contract, sort_keys=True).encode()).hexdigest()
-    passed = records > 0 and not truncated and invalid / records <= error_budget
-    return Report(records, invalid, violations, samples, truncated, digest, passed)
+    input_complete = reached_eof and not truncated and not input_changed
+    passed = records > 0 and input_complete and invalid / records <= error_budget
+    return Report(
+        records,
+        invalid,
+        violations,
+        samples,
+        truncated,
+        digest,
+        passed,
+        input_digest.hexdigest(),
+        input_bytes,
+        input_complete,
+        input_changed,
+    )
 
 
 def compatibility(old: dict, new: dict) -> list[dict]:

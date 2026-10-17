@@ -128,7 +128,14 @@ class Inspector:
                 )
             self.status.set(
                 f"{'PASS' if report.passed else 'FAIL'} · {report.records} records · "
-                f"{report.invalid_records} invalid · truncated={report.truncated}"
+                f"{report.invalid_records} invalid · truncated={report.truncated} · "
+                + (
+                    "source changed during scan"
+                    if report.input_changed
+                    else "fingerprint complete"
+                    if report.input_complete
+                    else "input incomplete"
+                )
             )
 
         self.root.after(100, poll)
