@@ -53,6 +53,27 @@ class InspectorLifecycle(unittest.TestCase):
         self.assertFalse(self.inspector.running)
         self.assertIsNone(self.inspector.report)
 
+    def test_changed_input_failure_explained_even_with_valid_records(self):
+        self.inspector.run()
+        self.future.set_result(
+            Report(
+                2,
+                0,
+                0,
+                [],
+                False,
+                "contract",
+                False,
+                input_sha256="bytes",
+                input_changed=True,
+            )
+        )
+        self.finish_poll()
+        self.assertIn(
+            "source changed during scan", self.inspector.status.set.call_args.args[0]
+        )
+        self.assertFalse(self.inspector.report["passed"])
+
     def test_input_change_invalidates_previous_report(self):
         from unittest.mock import patch
 

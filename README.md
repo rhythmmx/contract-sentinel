@@ -13,6 +13,7 @@ customer records to a hosted service. Zero runtime third-party Python dependenci
 - Detects compatibility changes: required additions, removed fields, narrowed types,
   tighter ranges, revoked nullability and newly constrained optional fields.
 - Rejects duplicate JSON keys, non-finite numbers, malformed lines and incomplete scans.
+- Fingerprints the bytes read and fails validation when source changes are detected during scanning.
 - Stores only timestamps, contract hashes and aggregate counts in transactional SQLite history.
 - Offers a Tk desktop inspector with a cancellable background worker and JSON report export.
 - Exits 0 for pass, 1 for quality failure, 2 for invalid input/configuration.
@@ -79,9 +80,11 @@ event loop responsive. CLI checks can run in any existing CI without credentials
 Flat objects only: no arrays, nested object contracts, regexes, semantic date validation, distributed
 jobs, authentication, model integration, or automatic schema inference. A very large individual
 contract is rejected at 1 MB. The GUI checks up to the default record cap.
-Local files can change during scanning; inputs should be immutable snapshots.
+Metadata checks detect common source changes during scanning; they do not provide immutable snapshots.
+Exported reports distinguish complete fingerprints from bounded prefixes. See
+[`docs/PROVENANCE.md`](docs/PROVENANCE.md) for lookahead, consistency and hash privacy limits.
 No benchmark, coverage percentage, adoption or uniqueness claim is made.
 
 No license grant has been selected by the owner. See `CONTRIBUTING.md` and `SECURITY.md`.
-Roadmap: nested-path contracts, immutable input fingerprints and additional
+Roadmap: nested-path contracts, stronger immutable-snapshot inputs and additional
 compatibility/property tests before expanding the dialect.
