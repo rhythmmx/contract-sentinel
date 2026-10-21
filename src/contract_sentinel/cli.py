@@ -1,7 +1,14 @@
 import argparse
 import json
 from pathlib import Path
-from .core import compatibility, contract_from, record_history, report_dict, scan
+from .core import (
+    compatibility,
+    contract_from,
+    diagnostic_format,
+    record_history,
+    report_dict,
+    scan,
+)
 
 
 def main():
@@ -21,8 +28,19 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == "diff":
-            changes = compatibility(contract_from(args.old), contract_from(args.new))
-            print(json.dumps({"breaking_changes": changes}, indent=2))
+            old, new = contract_from(args.old), contract_from(args.new)
+            changes = compatibility(old, new)
+            field_format = (
+                "json_pointer"
+                if "json_pointer" in (diagnostic_format(old), diagnostic_format(new))
+                else "name"
+            )
+            print(
+                json.dumps(
+                    {"breaking_changes": changes, "field_format": field_format},
+                    indent=2,
+                )
+            )
             return 1 if changes else 0
         report = scan(
             args.data,
@@ -34,7 +52,7 @@ def main():
             record_history(args.history, report)
         print(json.dumps(report_dict(report), indent=2))
         return 0 if report.passed else 1
-    except (ValueError, OSError):
+    except (ValueError, OSError, RecursionError):
         # Never echo dataset content or local private paths into CI logs.
         print(
             json.dumps(

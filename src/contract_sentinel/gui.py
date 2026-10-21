@@ -112,7 +112,7 @@ class Inspector:
             except ScanCancelled:
                 self.status.set("Validation cancelled. No report was produced.")
                 return
-            except (ValueError, OSError):
+            except (ValueError, OSError, RecursionError):
                 self.status.set(
                     "Validation could not run. Check input formats and permissions."
                 )
@@ -121,10 +121,15 @@ class Inspector:
             self.export_button.configure(state="normal")
             self.table.delete(*self.table.get_children())
             for finding in report.samples:
+                display_field = (
+                    "(root)"
+                    if report.field_format == "json_pointer" and finding["field"] == ""
+                    else finding["field"]
+                )
                 self.table.insert(
                     "",
                     "end",
-                    values=(finding["line"], finding["field"], finding["code"]),
+                    values=(finding["line"], display_field, finding["code"]),
                 )
             self.status.set(
                 f"{'PASS' if report.passed else 'FAIL'} · {report.records} records · "

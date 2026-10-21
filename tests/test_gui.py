@@ -74,6 +74,27 @@ class InspectorLifecycle(unittest.TestCase):
         )
         self.assertFalse(self.inspector.report["passed"])
 
+    def test_nested_root_diagnostic_has_readable_label(self):
+        self.inspector.run()
+        self.future.set_result(
+            Report(
+                1,
+                1,
+                1,
+                [{"line": 1, "field": "", "code": "not_object"}],
+                False,
+                "contract",
+                False,
+                field_format="json_pointer",
+            )
+        )
+        self.finish_poll()
+        self.assertEqual(
+            self.inspector.table.insert.call_args.kwargs["values"],
+            (1, "(root)", "not_object"),
+        )
+        self.assertEqual(self.inspector.report["samples"][0]["field"], "")
+
     def test_input_change_invalidates_previous_report(self):
         from unittest.mock import patch
 

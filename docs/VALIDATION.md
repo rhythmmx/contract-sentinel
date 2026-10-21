@@ -22,3 +22,12 @@ Hosted CI results are recorded separately after actual execution.
 mutation during scanning, empty input, cancellation and contract-size bounds. Ruff lint/format and
 mypy passed. The GUI explains source-change failures even when all parsed records are valid.
 Metadata checks remain best effort; immutable-snapshot guarantees are not claimed.
+
+## 2026-10-21 nested-object milestone
+
+51 tests passed locally, including the existing 36, 14 nested-object regressions and one desktop
+root-label regression. Ruff lint/format and mypy passed. Independent review found no blocker.
+A fresh package installation verified flat and nested checks, recursive compatibility output,
+exit codes 0/1/2 and rejection beyond the depth limit. An installed real Tk smoke verified readable
+root diagnostics while retaining the actual empty pointer in export data. Full visual QA remains
+unverified. Hosted Linux/Windows CI is inspected before merge; no arrays/full JSON Schema claimed.

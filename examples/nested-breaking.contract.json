@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "allow_extra": false,
+  "fields": {
+    "event_id": {
+      "type": "string",
+      "required": true
+    },
+    "payload": {
+      "type": "object",
+      "required": true,
+      "allow_extra": false,
+      "fields": {
+        "latency_ms": {
+          "type": "number",
+          "required": true,
+          "min": 0,
+          "max": 1000
+        },
+        "user": {
+          "type": "object",
+          "nullable": true,
+          "allow_extra": false,
+          "fields": {
+            "id": {
+              "type": "string",
+              "required": true
+            }
+          },
+          "required": true
+        }
+      }
+    }
+  }
+}

@@ -20,7 +20,8 @@ Actual verified output from the committed synthetic fixture:
   "input_sha256": "f61846e902b4fc14dea6856546aa85249998450bbc4f7d9e7dd08850822c23b8",
   "input_bytes": 114,
   "input_complete": true,
-  "input_changed": false
+  "input_changed": false,
+  "field_format": "name"
 }
 ```
 
