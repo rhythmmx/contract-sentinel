@@ -23,3 +23,5 @@ jobs:
       - run: python -m unittest discover -s tests -v
       - run: contract-sentinel check examples/events.contract.json examples/good.ndjson
       - run: contract-sentinel diff examples/events.contract.json examples/events.contract.json
+      - run: contract-sentinel check examples/nested.contract.json examples/nested-good.ndjson
+      - run: contract-sentinel diff examples/nested.contract.json examples/nested.contract.json

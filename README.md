@@ -10,6 +10,7 @@ customer records to a hosted service. Zero runtime third-party Python dependenci
 
 - Streams NDJSON with bounded line size, record count and diagnostic samples.
 - Validates required/nullable scalar fields, numeric ranges and unknown-field policy.
+- Validates bounded nested objects and detects breaking changes inside their contracts.
 - Detects compatibility changes: required additions, removed fields, narrowed types,
   tighter ranges, revoked nullability and newly constrained optional fields.
 - Rejects duplicate JSON keys, non-finite numbers, malformed lines and incomplete scans.
@@ -41,11 +42,13 @@ contract-sentinel check examples/events.contract.json examples/good.ndjson
 contract-sentinel check examples/events.contract.json examples/bad.ndjson
 contract-sentinel check examples/events.contract.json examples/good.ndjson --history state/history.db
 contract-sentinel diff examples/events.contract.json examples/events.contract.json
+contract-sentinel check examples/nested.contract.json examples/nested-good.ndjson
+contract-sentinel diff examples/nested.contract.json examples/nested-breaking.contract.json
 contract-sentinel-gui
 python -m unittest discover -s tests -v
 ```
 
-The bad fixture intentionally exits 1. In the GUI choose the example contract, then an example
+The bad fixture and nested-breaking diff intentionally exit 1. In the GUI choose the example contract, then an example
 dataset and click Validate. Export contains line numbers and rule codes, never raw records.
 Click Cancel to stop a running scan; closing the window also signals cancellation. A cancelled
 scan produces no report. Starting another scan clears the previous report to prevent stale exports.
@@ -59,6 +62,10 @@ default to false. `min`/`max` apply only to numeric fields. Unknown constraints 
 This is a small explicit dialect, not JSON Schema. Version is metadata; the tool does not
 automatically reject contract downgrades. Integer-to-number is a compatible widening.
 Compatibility means “would every old accepted record still be accepted?”
+
+Object rules add `type: object`, nonempty `fields` and an explicit boolean `allow_extra`.
+Up to eight nested object levels below the root are supported. See
+[`docs/NESTED-OBJECTS.md`](docs/NESTED-OBJECTS.md) for examples and diagnostic paths.
 
 ## Bounds and error budgets
 
@@ -77,7 +84,7 @@ Python keeps the validator deployable without a service; SQLite provides atomic 
 Tk avoids a browser/backend dependency for offline inspection. A bounded worker keeps the desktop
 event loop responsive. CLI checks can run in any existing CI without credentials or network access.
 
-Flat objects only: no arrays, nested object contracts, regexes, semantic date validation, distributed
+No array schemas, regexes, semantic date validation, distributed
 jobs, authentication, model integration, or automatic schema inference. A very large individual
 contract is rejected at 1 MB. The GUI checks up to the default record cap.
 Metadata checks detect common source changes during scanning; they do not provide immutable snapshots.
@@ -86,5 +93,5 @@ Exported reports distinguish complete fingerprints from bounded prefixes. See
 No benchmark, coverage percentage, adoption or uniqueness claim is made.
 
 No license grant has been selected by the owner. See `CONTRIBUTING.md` and `SECURITY.md`.
-Roadmap: nested-path contracts, stronger immutable-snapshot inputs and additional
+Roadmap: stronger immutable-snapshot inputs and additional
 compatibility/property tests before expanding the dialect.

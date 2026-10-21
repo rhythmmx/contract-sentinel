@@ -1,0 +1,2 @@
+{"event_id": "evt-3", "payload": {"latency_ms": -1, "user": {"id": 7}, "unexpected-extra": "synthetic-value"}}
+{"event_id": "evt-4"}
