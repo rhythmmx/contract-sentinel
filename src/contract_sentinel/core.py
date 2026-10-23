@@ -9,6 +9,7 @@ import math
 import os
 from pathlib import Path
 import sqlite3
+import sys
 from typing import Callable
 
 TYPES = {"string", "integer", "number", "boolean", "object"}
@@ -201,15 +202,23 @@ def scan(
     Input hashes cover bytes returned by bounded reads, including record-limit
     lookahead. Only input_complete identifies a complete, unchanged input hash.
     Metadata checks detect common modifications, not an immutable snapshot.
+    Limits require exact integers (not booleans); line size is at most
+    sys.maxsize - 1 to leave room for the bounded reader's lookahead byte.
+    The error budget requires an exact int or finite float in [0, 1].
     """
     validate_contract(contract)
     field_format = diagnostic_format(contract)
     root_location = "" if field_format == "json_pointer" else "$"
     if (
-        not 0 <= error_budget <= 1
+        type(max_records) is not int
         or max_records < 1
-        or max_line_bytes < 1
+        or type(max_line_bytes) is not int
+        or not 1 <= max_line_bytes <= sys.maxsize - 1
+        or type(max_samples) is not int
         or max_samples < 0
+        or type(error_budget) not in {int, float}
+        or (type(error_budget) is float and not math.isfinite(error_budget))
+        or not 0 <= error_budget <= 1
     ):
         raise ValueError("Invalid scan limits")
     records = invalid = violations = 0

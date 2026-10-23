@@ -73,6 +73,14 @@ Default maximums: 100,000 records, 1 MB per line, 50 diagnostic samples. Core Py
 all limits; CLI exposes `--max-records` and `--error-budget` (fraction 0..1). Empty datasets,
 oversized lines and record-limit truncation always fail. Invalid records within the explicitly
 configured fraction may pass. Record count, invalid-record count and violation count differ.
+Python API count limits must be exact integers (booleans and floats are rejected):
+`max_records >= 1`, `max_line_bytes >= 1`, and `max_samples >= 0`. The line limit must be at most
+`sys.maxsize - 1` because bounded reads reserve one extra byte to detect oversized lines.
+`error_budget` must be a finite built-in integer or float in 0..1; booleans are rejected.
+Invalid limits raise `ValueError("Invalid scan limits")` before input-file access. Setting
+`max_samples=0` suppresses diagnostic samples while retaining aggregate failure counts.
+Defaults remain unchanged. Caller-selected large limits can still consume substantial resources;
+this validates configured bounds rather than imposing a global memory or time quota.
 No raw input values or unknown key names appear in reports or stored history.
 The core API accepts `should_cancel`, a zero-argument callable returning a boolean. Cancellation
 raises `ScanCancelled` between bounded line reads and before returning a report. It does not
