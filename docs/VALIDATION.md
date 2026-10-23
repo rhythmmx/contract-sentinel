@@ -31,3 +31,13 @@ A fresh package installation verified flat and nested checks, recursive compatib
 exit codes 0/1/2 and rejection beyond the depth limit. An installed real Tk smoke verified readable
 root diagnostics while retaining the actual empty pointer in export data. Full visual QA remains
 unverified. Hosted Linux/Windows CI is inspected before merge; no arrays/full JSON Schema claimed.
+
+## 2026-10-23 strict scan-limit milestone
+
+58 tests passed locally, including seven new limit regression tests. Unsafe count/budget types,
+nonfinite values and platform-overflowing line sizes fail with ValueError before input stat/open.
+Valid exact record/line bounds, zero sample retention and fractional error budgets retain their
+behavior. Invalid CLI limits return sanitized JSON with exit 2 and create no history database.
+Ruff lint/format and mypy pass. A fresh wheel installation and pip check passed; installed API
+rejection and CLI exit codes 0/1/2 were executed. Hosted Linux/Windows CI is checked before merge.
+This fixes configured-bound validation, not a global resource quota; callers can choose large caps.
