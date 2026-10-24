@@ -343,9 +343,25 @@ def compatibility(old: dict, new: dict) -> list[dict]:
                 add(field, "null_no_longer_allowed")
             if rule["type"] == previous["type"] == "object":
                 compare_objects(previous, rule, field)
-            if rule.get("min", -math.inf) > previous.get("min", -math.inf):
+            old_min = previous.get("min", -math.inf)
+            old_max = previous.get("max", math.inf)
+            new_min = rule.get("min", -math.inf)
+            new_max = rule.get("max", math.inf)
+            if previous["type"] == "integer" and rule["type"] in {"integer", "number"}:
+                # Both schemas are compared over the old integer input domain.
+                # Convert only explicit finite bounds, preserving missing infinities
+                # and arbitrary-size integers without a float conversion.
+                if "min" in previous:
+                    old_min = math.ceil(old_min)
+                if "max" in previous:
+                    old_max = math.floor(old_max)
+                if "min" in rule:
+                    new_min = math.ceil(new_min)
+                if "max" in rule:
+                    new_max = math.floor(new_max)
+            if new_min > old_min:
                 add(field, "minimum_tightened")
-            if rule.get("max", math.inf) < previous.get("max", math.inf):
+            if new_max < old_max:
                 add(field, "maximum_tightened")
         if not after["allow_extra"]:
             for name in before["fields"].keys() - after["fields"].keys():

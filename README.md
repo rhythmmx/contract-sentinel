@@ -61,7 +61,12 @@ Supported scalar types: string, integer, number, boolean. Optional `required` an
 default to false. `min`/`max` apply only to numeric fields. Unknown constraints are rejected.
 This is a small explicit dialect, not JSON Schema. Version is metadata; the tool does not
 automatically reject contract downgrades. Integer-to-number is a compatible widening.
-Compatibility means “would every old accepted record still be accepted?”
+Compatibility checks ask whether old accepted records would still be accepted. For an integer
+field retained as integer or widened to number, fractional bounds are compared over accepted
+integers: `min` rounds up and `max` rounds down. For example, `0.1..1.9` and `0.9..1.1` both
+admit only integer `1`, so that change is compatible. Number-to-number bounds remain continuous.
+The analysis is conservative: it does not prove whole-contract satisfiability or suppress all
+findings for empty integer ranges or unreachable required nested structures.
 
 Object rules add `type: object`, nonempty `fields` and an explicit boolean `allow_extra`.
 Up to eight nested object levels below the root are supported. See
