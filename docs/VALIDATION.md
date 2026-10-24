@@ -41,3 +41,12 @@ behavior. Invalid CLI limits return sanitized JSON with exit 2 and create no his
 Ruff lint/format and mypy pass. A fresh wheel installation and pip check passed; installed API
 rejection and CLI exit codes 0/1/2 were executed. Hosted Linux/Windows CI is checked before merge.
 This fixes configured-bound validation, not a global resource quota; callers can choose large caps.
+
+## 2026-10-24 integer-domain compatibility milestone
+
+65 local tests passed, including seven new tests for equivalent positive/negative fractional
+bounds, actual rejected integer witnesses, integer-to-number widening, absent bounds, arbitrary-size
+integers, escaped nested pointers and unchanged fractional number behavior. A deterministic bounded
+acceptance-set comparison covers nonempty old integer intervals against integer/number destinations.
+Ruff lint/format and mypy pass. Conservative findings for empty old integer ranges and unreachable
+structures remain possible; whole-contract satisfiability is not analyzed.
