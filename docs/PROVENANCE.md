@@ -38,3 +38,23 @@ available in returned/exported reports, not added to historical database rows by
 
 Contract files are separately read through a bounded binary read: at most 1,000,001 bytes to
 enforce the existing 1 MB limit without a pre-stat/unbounded-read race.
+
+## Optional trusted expected digest
+
+Supply a known producer digest as `contract-sentinel check CONTRACT DATA --expected-sha256 DIGEST`
+or `scan(path, contract, expected_sha256=DIGEST)`. It must be a built-in string of exactly 64 hex
+characters (uppercase is accepted); invalid values raise ValueError before input-file access.
+The existing behavior is retained when the option is omitted.
+
+`input_matches_expected` is null without an expectation. With one, it is true only when the scan
+reaches EOF without truncation or detected mutation and its input hash matches. Otherwise it is
+false and `passed` is false, even with an error budget of 1. A matching prefix cannot satisfy the
+gate. A complete empty file may match its digest but still fails the nonempty-dataset requirement.
+A matching dataset containing invalid records still follows the configured record error budget.
+
+The expected digest must come from a trusted independent source; a digest bundled with untrusted
+bytes does not authenticate their producer. The gate binds validation to bytes actually read, not
+to an immutable file on disk or future reads. Existing metadata consistency limits still apply.
+The expected digest is not echoed; reports retain their existing actual hash and add only the
+match flag. History retains the aggregate schema and final pass/fail result, without dataset hashes
+or the match flag. Hash correlation/privacy caveats above still apply.

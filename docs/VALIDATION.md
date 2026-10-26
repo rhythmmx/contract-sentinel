@@ -50,3 +50,13 @@ integers, escaped nested pointers and unchanged fractional number behavior. A de
 acceptance-set comparison covers nonempty old integer intervals against integer/number destinations.
 Ruff lint/format and mypy pass. Conservative findings for empty old integer ranges and unreachable
 structures remain possible; whole-contract satisfiability is not analyzed.
+
+## Expected dataset digest gate - 2026-10-26
+
+73 local tests passed, including eight new tests for trusted matches, uppercase normalization,
+optional-default compatibility, mismatch despite error budget 1, matching bounded prefixes rejected,
+source-change rejection, empty-data quality failure, strict pre-I/O validation, CLI privacy/exit codes
+and unchanged aggregate history. Ruff lint/format and mypy passed. A fresh wheel installation,
+pip check and installed CLI match/uppercase (0), mismatch (1), invalid expectation (2), and omitted
+expectation (null) checks passed. Hosted Linux/Windows CI is inspected before merge. This is an
+observed-byte acceptance gate; immutable snapshots, locking or producer authentication are not claimed.

@@ -101,6 +101,14 @@ No array schemas, regexes, semantic date validation, distributed
 jobs, authentication, model integration, or automatic schema inference. A very large individual
 contract is rejected at 1 MB. The GUI checks up to the default record cap.
 Metadata checks detect common source changes during scanning; they do not provide immutable snapshots.
+For pipelines that already have a trusted SHA-256 digest, use `check --expected-sha256 HEX_DIGEST`
+or `scan(..., expected_sha256=...)`. Exactly 64 hexadecimal characters are required; uppercase is
+accepted. The report adds `input_matches_expected`: null when omitted, true only for a complete,
+unchanged scan with matching bytes, otherwise false. A false match gate fails regardless of the
+record error budget. A matching fingerprint does not override other quality failures. The expected
+digest itself is not copied into reports or history. Obtain it through a trusted producer/channel;
+calculating a digest from the same untrusted delivery does not establish its authenticity.
+This verifies bytes read rather than locking the source file or guaranteeing a snapshot.
 Exported reports distinguish complete fingerprints from bounded prefixes. See
 [`docs/PROVENANCE.md`](docs/PROVENANCE.md) for lookahead, consistency and hash privacy limits.
 No benchmark, coverage percentage, adoption or uniqueness claim is made.
