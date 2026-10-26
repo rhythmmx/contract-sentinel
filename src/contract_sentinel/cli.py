@@ -22,6 +22,9 @@ def main():
     check.add_argument("--history", type=Path)
     check.add_argument("--error-budget", type=float, default=0)
     check.add_argument("--max-records", type=int, default=100_000)
+    check.add_argument(
+        "--expected-sha256", help="Trusted SHA-256 of the complete dataset bytes"
+    )
     diff = sub.add_parser("diff")
     diff.add_argument("old", type=Path)
     diff.add_argument("new", type=Path)
@@ -47,6 +50,7 @@ def main():
             contract_from(args.contract),
             error_budget=args.error_budget,
             max_records=args.max_records,
+            expected_sha256=args.expected_sha256,
         )
         if args.history:
             record_history(args.history, report)

@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import os
+import re
 from pathlib import Path
 import sqlite3
 import sys
@@ -179,6 +180,7 @@ class Report:
     input_complete: bool = False
     input_changed: bool = False
     field_format: str = "name"
+    input_matches_expected: bool | None = None
 
 
 class ScanCancelled(Exception):
@@ -194,6 +196,7 @@ def scan(
     max_samples: int = 50,
     error_budget: float = 0,
     should_cancel: Callable[[], bool] | None = None,
+    expected_sha256: str | None = None,
 ) -> Report:
     """Scan bounded lines, checking cancellation between reads and before return.
 
@@ -205,6 +208,8 @@ def scan(
     Limits require exact integers (not booleans); line size is at most
     sys.maxsize - 1 to leave room for the bounded reader's lookahead byte.
     The error budget requires an exact int or finite float in [0, 1].
+    An expected SHA-256 gates acceptance on complete observed input bytes,
+    without making the source an immutable snapshot.
     """
     validate_contract(contract)
     field_format = diagnostic_format(contract)
@@ -221,6 +226,11 @@ def scan(
         or not 0 <= error_budget <= 1
     ):
         raise ValueError("Invalid scan limits")
+    if expected_sha256 is not None and (
+        type(expected_sha256) is not str
+        or re.fullmatch(r"[0-9a-fA-F]{64}", expected_sha256) is None
+    ):
+        raise ValueError("Invalid expected SHA-256")
     records = invalid = violations = 0
     samples: list[dict] = []
     truncated = False
@@ -289,7 +299,18 @@ def scan(
         raise ScanCancelled()
     digest = hashlib.sha256(json.dumps(contract, sort_keys=True).encode()).hexdigest()
     input_complete = reached_eof and not truncated and not input_changed
-    passed = records > 0 and input_complete and invalid / records <= error_budget
+    observed_sha256 = input_digest.hexdigest()
+    input_matches_expected = (
+        None
+        if expected_sha256 is None
+        else input_complete and observed_sha256 == expected_sha256.lower()
+    )
+    passed = (
+        records > 0
+        and input_complete
+        and invalid / records <= error_budget
+        and input_matches_expected is not False
+    )
     return Report(
         records,
         invalid,
@@ -298,11 +319,12 @@ def scan(
         truncated,
         digest,
         passed,
-        input_digest.hexdigest(),
+        observed_sha256,
         input_bytes,
         input_complete,
         input_changed,
         field_format,
+        input_matches_expected,
     )
 
 
